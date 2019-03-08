@@ -10,17 +10,19 @@
 #include <errno.h>
 #include <sys/mman.h>
 
-#define	MMAP_ALIGN		4096
-#define	MMAP_DEVICE		"/dev/mem"
+#define	MMAP_ALIGN	4096
+#define	MMAP_DEVICE	"/dev/mem"
 
-static void *iomem_map(unsigned long phys, unsigned long len, unsigned long *map_phys)
+static void *iomem_map(unsigned long phys, unsigned long len,
+		       unsigned long *map_phys)
 {
 	void *virt;
 	int fd;
 
 	fd = open(MMAP_DEVICE, O_RDWR|O_SYNC);
 	if (fd < 0) {
-		printf("Fail, open %s, %s\n", MMAP_DEVICE, strerror(errno));
+		printf("Fail, open %s, %s\n",
+			MMAP_DEVICE, strerror(errno));
 		return 0;
 	}
 
@@ -30,11 +32,9 @@ static void *iomem_map(unsigned long phys, unsigned long len, unsigned long *map
 	if (len & (MMAP_ALIGN - 1))
 		len = (len & ~(MMAP_ALIGN - 1)) + MMAP_ALIGN;
 
-	virt = mmap((void*)0,
-			len,
+	virt = mmap((void*)0, len,
 			PROT_READ|PROT_WRITE, MAP_SHARED,
-			fd,
-			(off_t)phys);
+			fd, (off_t)phys);
 	if ((long)virt == -1) {
 		printf("Fail: map PV:0x%08x, Len:%d, %s \n",
 			phys, len, strerror(errno));
@@ -55,7 +55,7 @@ static void iomem_free(void *virt, unsigned long len)
 		munmap(virt, len);
 }
 
-void print_usage(void)
+static void print_usage(void)
 {
     printf(
 	"usage: options\n"
