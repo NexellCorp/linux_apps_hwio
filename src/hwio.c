@@ -32,11 +32,11 @@ static void *iomem_map(unsigned long phys, unsigned long len,
 	if (len & (MMAP_ALIGN - 1))
 		len = (len & ~(MMAP_ALIGN - 1)) + MMAP_ALIGN;
 
-	virt = mmap((void*)0, len,
+	virt = mmap((void *)0, len,
 			PROT_READ|PROT_WRITE, MAP_SHARED,
 			fd, (off_t)phys);
 	if ((long)virt == -1) {
-		printf("Fail: map PV:0x%08x, Len:%d, %s \n",
+		printf("Fail: map PV:0x%08x, Len:%d, %s\n",
 			phys, len, strerror(errno));
 		goto _err_map;
 	}
@@ -57,16 +57,16 @@ static void iomem_free(void *virt, unsigned long len)
 
 static void print_usage(void)
 {
-    printf(
-	"usage: options\n"
-       	"-a physical address (hex)  \n"
-       	"-w write data (hex)  \n"
-       	"-l read length (hex) \n"
-	"-n line feed \n"
+	printf(
+		"usage: options\n"
+		"-a physical address (hex)\n"
+		"-w write data (hex), min 4byte\n"
+		"-l read length (hex)\n"
+		"-n line feed\n"
 	);
 }
 
-#define readl(a)	(*(unsigned long *)(a))	
+#define readl(a)	(*(unsigned long *)(a))
 #define writel(v, a)	(*(unsigned long *)(a) = v)
 
 int main(int argc, char **argv)
@@ -78,8 +78,8 @@ int main(int argc, char **argv)
 	bool wop = false, lfeed = false;
 	int i;
 
-    	while (-1 != (opt = getopt(argc, argv, "ha:w:l:n"))) {
-		switch(opt) {
+	while (-1 != (opt = getopt(argc, argv, "ha:w:l:n"))) {
+		switch (opt) {
 		case 'a':
 			addr = strtoul(optarg, NULL, 16);
 			break;
@@ -105,8 +105,8 @@ int main(int argc, char **argv)
 	addr &= ~0x3;
 
 	if (!addr) {
-    		printf("Fail, no IO address \n");
-    		print_usage();
+		printf("Fail, no IO address\n");
+		print_usage();
 		return -EINVAL;
 	}
 
@@ -115,13 +115,19 @@ int main(int argc, char **argv)
 		return -EINVAL;
 
 	if (wop) {
-		printf("\n(W) 0x%08x: 0x%08x\n", addr, data);
-		writel(data, virt + (addr - map_phys));
+		if (size < 4)
+			size = 4;
+
+		printf("\n(W) 0x%08x: 0x%08x [0x%08x]\n",
+			addr, data, addr + size);
+
+		for (i = 0; i < (int)(size/4); i++, addr += 4)
+			writel(data, virt + (addr - map_phys));
 	} else {
 		if (size < 4)
 			size = 4;
 
-		for (i = 0; i < (int)(size/4); i++, addr +=4) {
+		for (i = 0; i < (int)(size/4); i++, addr += 4) {
 			unsigned long val = readl(virt + (addr - map_phys));
 
 			if (!lfeed) {
